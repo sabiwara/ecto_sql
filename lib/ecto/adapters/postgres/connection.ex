@@ -1204,6 +1204,9 @@ if Code.ensure_loaded?(Postgrex) do
     defp returning([]),
       do: []
 
+    defp returning({:unsafe_fragment, fragment}),
+      do: [" RETURNING ", fragment]
+
     defp returning(returning),
       do: [" RETURNING " | quote_names(returning)]
 
@@ -1888,9 +1891,6 @@ if Code.ensure_loaded?(Postgrex) do
 
     defp drop_reference_if_exists_expr(%Reference{} = ref, table, name),
       do: ["DROP CONSTRAINT IF EXISTS ", reference_name(ref, table, name), ", "]
-
-    defp drop_reference_if_exists_expr(_, _, _),
-      do: []
 
     defp reference_name(%Reference{name: nil}, table, column),
       do: quote_name("#{table.name}_#{column}_fkey")

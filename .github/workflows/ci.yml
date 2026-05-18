@@ -57,7 +57,6 @@ jobs:
           - "16.2-alpine"
           - "11.11-alpine"
           - "9.6-alpine"
-          - "9.5-alpine"
         pool_count:
           - "1"
         include:

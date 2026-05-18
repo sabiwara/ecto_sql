@@ -58,9 +58,10 @@ defmodule EctoSQL.MixProject do
     [
       ecto_dep(),
       {:telemetry, "~> 0.4.0 or ~> 1.0"},
+      {:decimal, "~> 3.0"},
 
       # Drivers
-      {:db_connection, "~> 2.5 or ~> 2.4.1"},
+      {:db_connection, "~> 2.9"},
       postgrex_dep(),
       myxql_dep(),
       tds_dep(),
@@ -69,7 +70,8 @@ defmodule EctoSQL.MixProject do
       {:jason, "~> 1.0", only: [:test, :bench, :docs]},
 
       # Docs
-      {:ex_doc, "~> 0.21", only: :docs},
+      {:ex_doc, "~> 0.21", only: :docs, runtime: false, warn_if_outdated: true},
+      {:makeup_sql, ">= 0.1.3", only: :docs, runtime: false},
 
       # Benchmarks
       {:benchee, "~> 1.0", only: :bench},
@@ -191,7 +193,21 @@ defmodule EctoSQL.MixProject do
       source_ref: "v#{@version}",
       canonical: "http://hexdocs.pm/ecto_sql",
       source_url: @source_url,
-      extras: ["CHANGELOG.md"],
+      extras: [
+        "CHANGELOG.md",
+        "guides/migration_anatomy.md",
+        "guides/safe_migrations.md",
+        "guides/squashing_migrations.md",
+        "guides/backfilling_data.md"
+      ],
+      groups_for_extras: [
+        "Migration Guides": [
+          "guides/migration_anatomy.md",
+          "guides/safe_migrations.md",
+          "guides/squashing_migrations.md",
+          "guides/backfilling_data.md"
+        ]
+      ],
       skip_undefined_reference_warnings_on: ["CHANGELOG.md"],
       groups_for_modules: [
         # Ecto.Adapters.SQL,

@@ -29,11 +29,14 @@ defmodule Ecto.Integration.StorageTest do
 
   def create_database(owner \\ nil) do
     query = "CREATE DATABASE #{params()[:database]}"
-    query = if owner do
-      query <> " OWNER #{owner};"
-    else
-      query <> ";"
-    end
+
+    query =
+      if owner do
+        query <> " OWNER #{owner};"
+      else
+        query <> ";"
+      end
+
     run_psql(query)
   end
 
@@ -78,6 +81,22 @@ defmodule Ecto.Integration.StorageTest do
     drop_database()
   end
 
+  test "storage up sets timezone to UTC by default" do
+    assert Postgres.storage_up(params()) == :ok
+    {output, _} = run_psql("SHOW timezone;", [params()[:database]])
+    assert output =~ "Etc/UTC"
+  after
+    drop_database()
+  end
+
+  test "storage up with custom timezone" do
+    assert Postgres.storage_up([timezone: "America/New_York"] ++ params()) == :ok
+    {output, _} = run_psql("SHOW timezone;", [params()[:database]])
+    assert output =~ "America/New_York"
+  after
+    drop_database()
+  end
+
   test "storage down (twice in a row)" do
     create_database()
     assert Postgres.storage_down(params()) == :ok
@@ -93,10 +112,12 @@ defmodule Ecto.Integration.StorageTest do
   end
 
   test "storage up with unprivileged user with access to the database" do
-    unprivileged_params = Keyword.merge(params(),
-      username: "unprivileged",
-      password: "pass"
-    )
+    unprivileged_params =
+      Keyword.merge(params(),
+        username: "unprivileged",
+        password: "pass"
+      )
+
     run_psql("CREATE USER unprivileged WITH NOCREATEDB PASSWORD 'pass'")
     refute Postgres.storage_up(unprivileged_params) == :ok
     create_database("unprivileged")
@@ -174,7 +195,9 @@ defmodule Ecto.Integration.StorageTest do
     assert contents =~ "CREATE TABLE public.schema_migrations"
     assert contents =~ ~s[INSERT INTO public."schema_migrations" (version) VALUES (#{version})]
     assert contents =~ "CREATE TABLE test_schema.schema_migrations"
-    refute contents =~ ~s[INSERT INTO test_schema."schema_migrations" (version) VALUES (#{version})]
+
+    refute contents =~
+             ~s[INSERT INTO test_schema."schema_migrations" (version) VALUES (#{version})]
   after
     drop_schema_migrations_table(PoolRepo.config()[:database], "test_schema")
     drop_schema(PoolRepo.config()[:database], "test_schema")
@@ -196,7 +219,9 @@ defmodule Ecto.Integration.StorageTest do
     assert contents =~ "CREATE TABLE public.schema_migrations"
     assert contents =~ ~s[INSERT INTO public."schema_migrations" (version) VALUES (#{version})]
     assert contents =~ "CREATE TABLE test_schema.schema_migrations"
-    assert contents =~ ~s[INSERT INTO test_schema."schema_migrations" (version) VALUES (#{version})]
+
+    assert contents =~
+             ~s[INSERT INTO test_schema."schema_migrations" (version) VALUES (#{version})]
   after
     drop_schema_migrations_table(PoolRepo.config()[:database], "test_schema")
     drop_schema(PoolRepo.config()[:database], "test_schema")
@@ -218,12 +243,13 @@ defmodule Ecto.Integration.StorageTest do
     refute contents =~ "CREATE TABLE public.schema_migrations"
     refute contents =~ ~s[INSERT INTO public."schema_migrations" (version) VALUES (#{version})]
     assert contents =~ "CREATE TABLE test_schema.schema_migrations"
-    assert contents =~ ~s[INSERT INTO test_schema."schema_migrations" (version) VALUES (#{version})]
+
+    assert contents =~
+             ~s[INSERT INTO test_schema."schema_migrations" (version) VALUES (#{version})]
   after
     drop_schema_migrations_table(PoolRepo.config()[:database], "test_schema")
     drop_schema(PoolRepo.config()[:database], "test_schema")
   end
-
 
   test "storage status is up when database is created" do
     create_database()
