@@ -953,23 +953,23 @@ if Code.ensure_loaded?(Postgrex) do
 
     defp expr({:in, _, [left, right]}, sources, query) when is_list(right) do
       args = Enum.map_intersperse(right, ?,, &expr(&1, sources, query))
-      [expr(left, sources, query), " IN (", args, ?)]
+      [maybe_paren(left, sources, query), " IN (", args, ?)]
     end
 
     defp expr({:in, _, [left, {:^, _, [ix, _]}]}, sources, query) do
-      [expr(left, sources, query), " = ANY($", Integer.to_string(ix + 1), ?)]
+      [maybe_paren(left, sources, query), " = ANY($", Integer.to_string(ix + 1), ?)]
     end
 
     defp expr({:in, _, [left, %Ecto.SubQuery{} = subquery]}, sources, query) do
-      [expr(left, sources, query), " IN ", expr(subquery, sources, query)]
+      [maybe_paren(left, sources, query), " IN ", expr(subquery, sources, query)]
     end
 
     defp expr({:in, _, [left, right]}, sources, query) do
-      [expr(left, sources, query), " = ANY(", expr(right, sources, query), ?)]
+      [maybe_paren(left, sources, query), " = ANY(", expr(right, sources, query), ?)]
     end
 
     defp expr({:is_nil, _, [arg]}, sources, query) do
-      [expr(arg, sources, query) | " IS NULL"]
+      [maybe_paren(arg, sources, query) | " IS NULL"]
     end
 
     defp expr({:not, _, [expr]}, sources, query) do

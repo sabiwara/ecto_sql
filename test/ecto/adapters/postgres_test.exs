@@ -831,6 +831,9 @@ defmodule Ecto.Adapters.PostgresTest do
 
     query = "schema" |> select([r], r.x == is_nil(r.y)) |> plan()
     assert all(query) == ~s{SELECT s0."x" = (s0."y" IS NULL) FROM "schema" AS s0}
+
+    query = "schema" |> select([r], is_nil(not r.x)) |> plan()
+    assert all(query) == ~s{SELECT (NOT (s0."x")) IS NULL FROM "schema" AS s0}
   end
 
   test "fragments" do
@@ -1096,6 +1099,15 @@ defmodule Ecto.Adapters.PostgresTest do
 
     assert all(query) ==
              ~s{SELECT ((s0."x" = $1) OR s0."x" = ANY($2)) OR (s0."x" = $3) FROM "schema" AS s0}
+
+    query = "schema" |> select([e], (not e.x) in [true, false]) |> plan()
+    assert all(query) == ~s{SELECT (NOT (s0."x")) IN (TRUE,FALSE) FROM "schema" AS s0}
+
+    query = "schema" |> select([e], (not e.x) in ^[true, false]) |> plan()
+    assert all(query) == ~s{SELECT (NOT (s0."x")) = ANY($1) FROM "schema" AS s0}
+
+    query = "schema" |> select([e], (not e.x) in e.w) |> plan()
+    assert all(query) == ~s{SELECT (NOT (s0."x")) = ANY(s0."w") FROM "schema" AS s0}
   end
 
   test "in subquery" do
@@ -1105,6 +1117,14 @@ defmodule Ecto.Adapters.PostgresTest do
     assert all(query) ==
              ~s{SELECT c0."x" FROM "comments" AS c0 } <>
                ~s{WHERE (c0."post_id" IN (SELECT sp0."id" FROM "posts" AS sp0 WHERE (sp0."title" = $1)))}
+
+    query =
+      "comments"
+      |> select([c], (not c.published) in subquery(from(p in "posts", select: p.published)))
+      |> plan()
+
+    assert all(query) ==
+             ~s{SELECT (NOT (c0."published")) IN (SELECT sp0."published" AS "published" FROM "posts" AS sp0) FROM "comments" AS c0}
 
     posts = subquery("posts" |> where(title: parent_as(:comment).subtitle) |> select([p], p.id))
 
